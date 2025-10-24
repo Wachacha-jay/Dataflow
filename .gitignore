@@ -1,10 +1,74 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
-*.egg-info
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual environments
+venv/
+env/
+ENV/
 .venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logging
+logs/
+*.log
+
+# Data and outputs
+data/
+output/
+cache/
+*.csv
+*.xlsx
+*.json
+*.parquet
+
+# Environment variables
+.env
+.env.local
+
+# Reports
+reports/
+*.html
+*.pdf
+
+# Visualizations
+visualizations/
+*.png
+*.jpg
+*.svg
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
