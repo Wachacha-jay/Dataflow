@@ -6,8 +6,9 @@ import asyncio
 from typing import Any
 
 from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fast import create_fastapi
 from mcp.types import Tool, TextContent
+from fastapi import FastAPI
 
 from app.config import settings
 from app.utils.logger import get_logger
@@ -17,6 +18,7 @@ from app.tools import (
     analyze_data_tool,
     visualize_data_tool,
     generate_report_tool,
+    clean_data_tool,
 )
 
 logger = get_logger(__name__)
@@ -184,6 +186,51 @@ TOOLS = [
             "required": ["file_path"],
         },
     ),
+    Tool(
+        name="clean_data",
+        description="Clean and preprocess data by handling missing values, duplicates, outliers, and more.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "Path to the data file",
+                },
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["missing_values", "duplicates", "outliers", "normalize_strings", "coerce_types"],
+                    },
+                    "description": "List of cleaning operations to perform",
+                },
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "missing_values": {
+                            "type": "object",
+                            "properties": {
+                                "strategy": {
+                                    "type": "string",
+                                    "enum": ["drop", "mean", "median", "mode", "constant", "ffill", "bfill"],
+                                },
+                                "fill_value": {"type": "string"},
+                            },
+                        },
+                        "outliers": {
+                            "type": "object",
+                            "properties": {
+                                "method": {"type": "string", "enum": ["zscore", "iqr"]},
+                                "threshold": {"type": "number"},
+                            },
+                        },
+                        "output_path": {"type": "string"},
+                    },
+                },
+            },
+            "required": ["file_path", "operations"],
+        },
+    ),
 ]
 
 
@@ -219,6 +266,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             result = await visualize_data_tool(arguments)
         elif name == "generate_report":
             result = await generate_report_tool(arguments)
+        elif name == "clean_data":
+            result = await clean_data_tool(arguments)
         else:
             logger.error(f"Unknown tool: {name}")
             result = {"success": False, "error": f"Unknown tool: {name}"}
@@ -236,24 +285,29 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         return [TextContent(type="text", text=f"Error executing tool: {str(e)}")]
 
 
-async def main() -> None:
-    """Main entry point for the MCP server."""
+def main() -> FastAPI:
+    """Create and configure FastAPI app with MCP."""
     logger.info("Starting Agentic Data Analyst MCP Server")
     logger.info(f"Configuration loaded from: {settings.data_dir}")
     logger.info(f"Available tools: {len(TOOLS)}")
     
-    async with stdio_server() as (read_stream, write_stream):
-        logger.info("MCP server running on stdio")
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options(),
-        )
+    # Create FastAPI app with MCP integration
+    fastapi_app = create_fastapi(app)
+    logger.info("MCP server running with FastAPI")
+    return fastapi_app
 
 
 if __name__ == "__main__":
+    import uvicorn
+    
     try:
-        asyncio.run(main())
+        # Run FastAPI app with uvicorn
+        uvicorn.run(
+            "app.main:main()",
+            host="0.0.0.0",
+            port=8000,
+            reload=True
+        )
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
     except Exception as e:

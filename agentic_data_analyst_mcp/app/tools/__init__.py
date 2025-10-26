@@ -5,6 +5,7 @@ from app.tools.tool_find_relationships import find_relationships_tool
 from app.tools.tool_analyze_data import analyze_data_tool
 from app.tools.tool_visualize_data import visualize_data_tool
 from app.tools.tool_generate_report import generate_report_tool
+from app.tools.tool_clean_data import clean_data_tool
 
 __all__ = [
     "discover_schema_tool",
@@ -12,4 +13,5 @@ __all__ = [
     "analyze_data_tool",
     "visualize_data_tool",
     "generate_report_tool",
+    "clean_data_tool",
 ]
