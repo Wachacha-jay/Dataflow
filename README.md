@@ -95,13 +95,14 @@ python -m app.main
 ## Project Structure
 
 ```
-agentic_data_analyst_mcp/
+DATAFLOW/
 ├── app/                    # Main application code
 │   ├── core/              # Core analytical logic
 │   ├── tools/             # MCP tool implementations
 │   ├── utils/             # Utilities and helpers
 │   ├── models/            # Data models
-│   └── adapters/          # Data source connectors
+│   └── adapters/          └
+│        
 ├── tests/                 # Test suite
 ├── data/                  # Sample data (not in repo)
 ├── output/                # Generated outputs
