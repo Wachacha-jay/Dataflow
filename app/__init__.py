@@ -1,5 +1,5 @@
 """
-Agentic Data Analyst MCP Server
+Dataflow - Agentic Data Analysis MCP Server
 
 A comprehensive data analysis system with schema discovery, relationship mapping,
 and automated report generation.
@@ -12,6 +12,6 @@ from app.config import settings
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
-logger.info(f"Initializing Agentic Data Analyst MCP Server v{__version__}")
+logger.info(f"Initializing Dataflow MCP Server v{__version__}")
 
 __all__ = ["settings", "get_logger"]

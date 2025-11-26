@@ -1,10 +1,13 @@
 [project]
-name = "agentic-data-analyst-mcp"
+name = "dataflow"
 version = "0.1.0"
 description = "An MCP server for agentic data analysis with schema discovery, relationships, and reporting"
 authors = [{ name = "James W. Ngaruiya", email = "jameswachacha@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.10"
+packages = [
+    { include = "app" }
+]
 
 dependencies = [
     "mcp>=1.0.0",
