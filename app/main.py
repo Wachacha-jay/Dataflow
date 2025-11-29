@@ -4,8 +4,8 @@ Dataflow MCP Server - FastAPI ASGI application.
 
 from typing import Any
 
+from fastapi import FastAPI
 from mcp.server import Server
-from mcp.server.fast import create_fastapi
 from mcp.types import Tool, TextContent
 
 from app.config import settings
@@ -174,14 +174,41 @@ def build_mcp_server() -> Server:
 def create_app():
     """
     ASGI application factory for Render deployment.
-    Returns a FastAPI app with MCP server integration.
+    Returns a FastAPI app with health check endpoints.
     """
     logger.info("Initializing Dataflow MCP server")
     logger.info(f"Data directory: {settings.data_dir}")
 
-    mcp_server = build_mcp_server()
-    app = create_fastapi(mcp_server)
-    
+    app = FastAPI(
+        title="Dataflow MCP Server",
+        description="MCP server for agentic data analysis",
+        version="0.1.0"
+    )
+
+    @app.get("/")
+    async def root():
+        """Health check endpoint."""
+        return {
+            "status": "healthy",
+            "service": "Dataflow MCP Server",
+            "version": "0.1.0"
+        }
+
+    @app.get("/health")
+    async def health():
+        """Health check endpoint."""
+        return {"status": "healthy"}
+
+    @app.get("/info")
+    async def info():
+        """Server information."""
+        return {
+            "name": "dataflow",
+            "version": "0.1.0",
+            "tools": [tool.name for tool in TOOLS],
+            "data_directory": str(settings.data_dir)
+        }
+
     return app
 
 
