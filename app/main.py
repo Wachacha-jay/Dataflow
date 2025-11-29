@@ -1,25 +1,15 @@
 """
-Render-safe MCP server entry point with FastAPI app factory.
+Dataflow MCP Server - FastAPI ASGI application.
 """
 
-from typing import Any, Optional
-import logging
+from typing import Any
 
 from mcp.server import Server
+from mcp.server.fast import create_fastapi
 from mcp.types import Tool, TextContent
-
-# Attempt FastAPI MCP integration
-try:
-    from mcp.server.fast import create_fastapi  # ASGI wrapper
-    from fastapi import FastAPI
-    HAS_FAST_MCP = True
-except Exception:
-    HAS_FAST_MCP = False
-    FastAPI = None  # type: ignore
 
 from app.config import settings
 from app.utils.logger import get_logger
-
 from app.tools import (
     discover_schema_tool,
     find_relationships_tool,
@@ -29,15 +19,9 @@ from app.tools import (
     clean_data_tool,
 )
 
-# -----------------------------------------------------
-# Logging
-# -----------------------------------------------------
 logger = get_logger(__name__)
 
-# -----------------------------------------------------
-# TOOL DEFINITIONS
-# -----------------------------------------------------
-
+# Tool definitions
 TOOLS: list[Tool] = [
     Tool(
         name="discover_schema",
@@ -47,10 +31,7 @@ TOOLS: list[Tool] = [
             "properties": {
                 "file_path": {"type": "string"},
                 "sample_size": {"type": "integer"},
-                "detect_relationships": {
-                    "type": "boolean",
-                    "default": True
-                },
+                "detect_relationships": {"type": "boolean", "default": True},
             },
             "required": ["file_path"],
         },
@@ -149,15 +130,8 @@ TOOLS: list[Tool] = [
 ]
 
 
-# -----------------------------------------------------
-# Create MCP Server (no FastAPI yet)
-# -----------------------------------------------------
-
 def build_mcp_server() -> Server:
-    """
-    Construct the MCP server independently from ASGI/FastAPI.
-    Safe to call inside create_app().
-    """
+    """Build and configure the MCP server with tool handlers."""
     server = Server("dataflow")
 
     @server.list_tools()
@@ -169,7 +143,7 @@ def build_mcp_server() -> Server:
     async def _call_tool(name: str, arguments: Any) -> list[TextContent]:
         logger.info(f"Tool called: {name}")
 
-        mapping = {
+        tool_mapping = {
             "discover_schema": discover_schema_tool,
             "find_relationships": find_relationships_tool,
             "analyze_data": analyze_data_tool,
@@ -179,10 +153,10 @@ def build_mcp_server() -> Server:
         }
 
         try:
-            if name not in mapping:
+            if name not in tool_mapping:
                 return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
-            handler = mapping[name]
+            handler = tool_mapping[name]
             result = await handler(arguments)
 
             if result.get("success", False):
@@ -197,46 +171,24 @@ def build_mcp_server() -> Server:
     return server
 
 
-# -----------------------------------------------------
-# ASGI Factory for Render + Uvicorn
-# -----------------------------------------------------
-
 def create_app():
     """
-    Render-safe ASGI app factory.
-    Always returns a valid FastAPI app.
+    ASGI application factory for Render deployment.
+    Returns a FastAPI app with MCP server integration.
     """
-    logger.info("Initializing Dataflow MCP ASGI wrapper")
-    logger.info(f"Config directory: {settings.data_dir}")
+    logger.info("Initializing Dataflow MCP server")
+    logger.info(f"Data directory: {settings.data_dir}")
 
-    # FAST MCP available → full ASGI MCP server
-    if HAS_FAST_MCP:
-        mcp_server = build_mcp_server()
-        app = create_fastapi(mcp_server)
-        return app
-
-    # Fallback → MINIMAL FASTAPI APP
-    logger.warning("FAST MCP unavailable → Running STDIO placeholder app")
-
-    app = FastAPI()  # type: ignore
-
-    @app.get("/")
-    async def root():
-        return {
-            "status": "limited",
-            "message": "FAST MCP not available. Running in fallback mode.",
-        }
-
+    mcp_server = build_mcp_server()
+    app = create_fastapi(mcp_server)
+    
     return app
 
 
-# -----------------------------------------------------
-# Local Dev Run
-# -----------------------------------------------------
-
-if __name__ == "__main__":
+def main():
+    """Local development entry point."""
     import uvicorn
-
+    
     uvicorn.run(
         "app.main:create_app",
         factory=True,
@@ -244,3 +196,7 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
     )
+
+
+if __name__ == "__main__":
+    main()
