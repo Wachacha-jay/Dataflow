@@ -184,6 +184,9 @@ def create_app():
         description="MCP server for agentic data analysis",
         version="0.1.0"
     )
+    
+    # Build MCP server
+    mcp_server = build_mcp_server()
 
     @app.get("/")
     async def root():
@@ -208,6 +211,50 @@ def create_app():
             "tools": [tool.name for tool in TOOLS],
             "data_directory": str(settings.data_dir)
         }
+    
+    @app.post("/mcp/tools/call")
+    async def call_tool(request: dict):
+        """Execute an MCP tool."""
+        tool_name = request.get("name")
+        arguments = request.get("arguments", {})
+        
+        logger.info(f"Tool called via REST: {tool_name}")
+        
+        tool_mapping = {
+            "discover_schema": discover_schema_tool,
+            "find_relationships": find_relationships_tool,
+            "analyze_data": analyze_data_tool,
+            "visualize_data": visualize_data_tool,
+            "generate_report": generate_report_tool,
+            "clean_data": clean_data_tool,
+        }
+        
+        if tool_name not in tool_mapping:
+            return {
+                "success": False,
+                "error": f"Unknown tool: {tool_name}"
+            }
+        
+        try:
+            handler = tool_mapping[tool_name]
+            result = await handler(arguments)
+            
+            if result.get("success", False):
+                return {
+                    "success": True,
+                    "data": result["data"]
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": result.get("error", "Unknown error")
+                }
+        except Exception as e:
+            logger.error(f"Tool execution error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
     return app
 
